@@ -661,7 +661,7 @@ class ARCSolver:
 
     def prepare_evaluation(
         self,
-        checkpoint_path: str = "artifacts/qwen4b-test-1/checkpoint-final",
+        checkpoint_path: str = "artifacts/qwen4b-instruct/checkpoint-final",
         enable_ttt: bool = True,
         use_data_augmentation_for_generation: bool = True,
         num_augmentations: int = 5,
