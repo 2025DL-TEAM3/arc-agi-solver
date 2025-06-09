@@ -10,17 +10,17 @@ token: null
 
 # Define the root workspace directory
 # can be used for kubernetes
-workspace: /2025pdp/junghoon
-cache_dir: /2025pdp/.cache
+workspace: /home/student/workspace
+cache_dir: null
 
 # Paths based on workspace
-dataset_dir: ${workspace}/eval_dataset
-augmented_dataset_dir: ${workspace}/augmented_dataset_2
+dataset_dir: ${workspace}/dataset
+augmented_dataset_dir: ${workspace}/skeleton/augmented_dataset
 use_cached_augmented_dataset: true
 artifacts_dir: ${workspace}/skeleton/artifacts
 evaluation_dir: ${workspace}/evaluation
 
 # name of the training e.g. qwen4b-rank8
 # all artifacts from this train will be saved in ${artifacts_dir}/${artifact_name}
-artifact_name: "qwen4b-test-3"
+artifact_name: "qwen4b-test-1"
 

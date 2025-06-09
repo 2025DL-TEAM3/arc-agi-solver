@@ -1,11 +1,4 @@
 import os, glob, json, time, random, copy, gc, datetime, traceback, tempfile
-os.environ["HF_HOME"]            = "/2025pdp/.cache"
-os.environ["TRANSFORMERS_CACHE"] = "/2025pdp/.cache"
-os.environ["HF_DATASETS_CACHE"]  = "/2025pdp/.cache/huggingface/datasets"
-os.environ["HF_METRICS_CACHE"]   = "/2025pdp/.cache/huggingface/metrics"
-os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "true"
-os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "true"
-os.environ["HF_HUB_DISABLE_EXPERIMENTAL_WARNING"] = "true"
 from wasabi import msg
 from omegaconf import DictConfig, OmegaConf
 import numpy as np
@@ -99,7 +92,7 @@ class ARCSolver:
     def __init__(
         self, 
         token: str = None,
-        config_path: str = "artifacts/config.yaml",
+        config_path: str = "artifacts/qwen4b-instruct/config.yaml",
     ):
         cfg = load_config(config_path)
         train_artifacts_dir = cfg.get("train_artifacts_dir", None)
@@ -218,7 +211,10 @@ class ARCSolver:
         
         self.generation_config = GenerationConfig(
             max_new_tokens=150,
-            do_sample=False,   
+            do_sample=True,
+            temperature=0.5,
+            top_p=0.8,
+            top_k=20,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id,
         )
@@ -510,14 +506,14 @@ class ARCSolver:
     def test_time_training(
         self, 
         examples: List[ExampleDict],
-        num_repeat: int = 5,
-        timeout: int = 35,
+        num_repeat: int = 4,
+        timeout: int = 23,
         learning_rate: float = 5e-5,
         optim: str = "paged_adamw_8bit",
         max_grad_norm: float = 1.0,
         fp16: bool = True,
         logging_strategy: str = "no",
-        step_timeout: float = 2.2,
+        step_timeout: float = 1000,
     ):
         if not self.enable_ttt: 
             print("Test-time training is not enabled. Skipping.")
@@ -531,6 +527,7 @@ class ARCSolver:
             f"- optim: {optim}\n"
             f"- max_grad_norm: {max_grad_norm}\n"
             f"- fp16: {fp16}\n"
+            f"- step_timeout: {step_timeout} seconds\n"
             f"- logging_strategy: {logging_strategy}\n"
         )
         print(ttt_args_msg)
@@ -597,7 +594,7 @@ class ARCSolver:
         trainer = SFTTrainer(
             model=self.peft_model,
             processing_class=self.tokenizer,
-            train_dataset=dataset,
+            train_dataset=ttt_dataset,
             args=ttt_args,
             data_collator=data_collator,
             peft_config=self.peft_config,
@@ -664,7 +661,7 @@ class ARCSolver:
 
     def prepare_evaluation(
         self,
-        checkpoint_path: str = "artifacts/checkpoint-final",
+        checkpoint_path: str = "artifacts/qwen4b-test-1/checkpoint-final",
         enable_ttt: bool = True,
         use_data_augmentation_for_generation: bool = True,
         num_augmentations: int = 5,

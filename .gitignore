@@ -1,5 +1,6 @@
 __pycache__
 artifacts/
+!artifacts/requirements.txt
 evaluation/
 outputs/
 !requirements.txt

@@ -1,4 +1,3 @@
-### Copied from https://github.com/ironbar/arc24/blob/main/scripts/arc24/data_augmentation.py
 from pprint import pprint
 from copy import deepcopy
 import random

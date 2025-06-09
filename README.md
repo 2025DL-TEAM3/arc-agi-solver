@@ -14,27 +14,42 @@ pip install -r requirements.txt
 ### Directory Hierarchy
 ```
 workspace/
-    - dataset/
+    - dataset/ # original dataset
     - skeleton/
+        - augmented_dataset/ # augmented dataset (cached in advance)
         - conf/
+            - config.yaml
+            - train.yaml
+            - dataset.yaml
+            - model.yaml
+            - evaluate.yaml
+            - generate.yaml
         - artifacts/
             - <artifact_name>
                 - checkpoints/
-                    - checkpoint-0
+                    - checkpoint-10000
                     - ...
                     - checkpoint-final
                 - logs/
                 - config.yaml
-        - evaluation
         - arc/
+            - arc.py
+            - arc_dataset.py
+            - arc_utils.py
+            - data_augmentation.py
+            - data_transform.py
+            - custom_head.py
+            - datatypes.py
+            - inference_helpers.py
         - train.py
-        - predict.py
         - evaluate.py
 ```
 
-### Artifact_name name
+### Artifact_name
 ```yaml
-artifact_name: train-test
+# conf/config.yaml
+
+artifact_name: "qwen4b-test-2"
 ```
 
 ### Paths
@@ -42,34 +57,55 @@ artifact_name: train-test
 # conf/config.yaml
 
 # Define the root workspace directory
-# can be used for kubernetes
-workspace: /home/<username>/code/intro_dl/term_project
+workspace: /home/student/workspace
 cache_dir: null
 
 # Paths based on workspace
 dataset_dir: ${workspace}/dataset
+augmented_dataset_dir: ${workspace}/skeleton/augmented_dataset
 artifacts_dir: ${workspace}/skeleton/artifacts
-evaluation_dir: ${workspace}/skeleton/evaluation
 ```
 
-### Trains
+### Training Configuration
 
-See `conf/train.yaml`
+See `conf/train.yaml` for training parameters.
+
+### Generation Configuration
+
+See `conf/generate.yaml` for inference parameters.
+We used Test-Time Training(TTT) and grid-wise voting techniques.
 
 ## 3. Train
 
 ```bash
 python train.py
-python train.py artifact_name=my-train
 ```
+All the logs will be printed both to stdout and to the file named `<artifact_name>/logs/train-log-redirected.txt`.
+
+### Model Training
+
+The training process is managed by `ARCSolver` class which:
+1. Loads and configures the base model (attach a custom head)
+2. Sets up LoRA fine-tuning
+3. Handles data transformation and augmentation
+4. Manages the training process using SFTTrainer
+5. Supports test-time training (TTT) for inference
+
+### Key Features
+- LoRA fine-tuning with configurable rank and alpha
+- Optional custom head for vocabulary optimization
+- Training both LoRA adapters and custom head parameters simultaneously
+- Data augmentation during training
+- Checkpoint saving and loading
+- Test-time training support
 
 # Code Structure
 
 ## Dataset
 
-`task json` to `DatapointDict`
-- Select task
-- Sample 3 `ExampleDict` and 1 `ExampleDict` for train examples and test input, respectively
+`task_json` to `DatapointDict`
+- Select a task file
+- Sample examples for train and test from the task
 
 ### Interface
 ```python
@@ -80,7 +116,7 @@ dataset[0]: DatapointDict # see datatypes.py
 
 ## Transformation
 
-You should transform `DataPointDict` into `PromptCompletionPair` to train/ineference
+Transform `DataPointDict` into formatted text for training/inference
 
 ```python
 datapoint = {
@@ -94,74 +130,17 @@ datapoint = {
     "test": [
         {
             "input": [[1, 2], [3, 4]],
-            "output": [[3, 4], [5, 6]]
+            "output": None
         }
     ]
 }
 
-prompt_completion_pair = {
-    'prompt': {
-        'role': 'user', 
-        'content': "You're a smart puzzle solver. ... Test Input: 12\n34\n"
-    }
-    'completion': {
-        'role': 'assistant',
-        'content': '34\n56\n'
-    }
-}
-
-formatted_prompt_completion_pair = {
-    'prompt': "<|im_start|>user\nYou're a smart puzzle solver ... Test Input: 12\n34\n<|im_end|><|im_start>assistant"
-    'completion': "<think></think>34\n56\n<|im_end>"
-}
+formatted_text = "I\n12\n34\n+/-=O\n34\n56\n\nI\n..."
 ```
 
-### `DataTransform` class
+### Data Transformation
 
-You can acheive this in any way, by implementing a subclass for `DataTransform`
-
-```python
-class DataTransform(ABC):
-    @abstractmethod
-    def transform(self, datapoint: DataPointDict) -> PromptCompletionPair:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    def __call__(self, datapoint: DataPointDict) -> PromptCompletionPair:
-        return self.transform(datapoint)
-
-class DefaultFormatMessages(DataTransform):
-    def transform(self, datapoint: DataPointDict) -> PromptCompletionPair:
-        return arc_utils.datapoint_to_prompt_completion_pair(datapoint)
-```
-
-`DefaultFormatMessages` just concatenate train examples into prompt string (예전에 하던 `format_prmopt`와 유사)
-
-You can:
-- augment datapoints and sample train examples in them
-- ... other techniques
-
-### Apply custom transform class
-You can apply your customized transform class by adding it into a paramter
-```python
-# ARCSolver.train() @ arc.py
-
-...
-trainer = ARCSFTTrainer(
-    model=self.base_model if self.peft_model is None else self.peft_model,
-    processing_class=self.tokenizer,
-    train_dataset_builder=train_dataset_builder,
-    train_dataset_transform=None, # TODO
-    eval_dataset=eval_dataset,
-    eval_dataset_transform=None, # TODO
-    args=training_args,
-    peft_config=peft_config,
-    use_task_batch_sampler=use_task_batch_sampler,
-)
-```
-
-## Trainer
-
-1. map dataset using your transform (or default one)
-2. **reload train dataset for each epoch**
-3. instantiate `SFTTrainer`
-4. *TODO* : Task Batch Sampling 구현하기
+The transformation is handled by `data_transform.py` which includes:
+- Default formatting of examples
+- Data augmentation
+- Tokenization

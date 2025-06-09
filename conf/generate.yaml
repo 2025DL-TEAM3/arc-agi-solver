@@ -1,18 +1,18 @@
 generate:
-  checkpoint_path: ${artifacts_dir}/qwen4b-test-3/checkpoints/checkpoint-50000
-  config_path: ${artifacts_dir}/qwen4b-test-3/config.yaml
+  checkpoint_path: ${artifacts_dir}/qwen4b-instruct/checkpoint-final
+  config_path: ${artifacts_dir}/qwen4b-instruct/config.yaml
   
-  enable_ttt: false
+  enable_ttt: true
   use_data_augmentation_for_generation: true
-  num_augmentations: 6
+  num_augmentations: 5
   grid_select_policy: voted-gridwise # naive, grid-wise, cell-wise-argmax, voted-gridwise
 
   ttt_kwargs:
-    num_repeat: 8
-    timeout: 37
+    num_repeat: 4
+    timeout: 23
     learning_rate: 5e-5
     optim: paged_adamw_8bit
     max_grad_norm: 1.0
     fp16: true
     logging_strategy: 'no'
-    step_timeout: 2.2
+    step_timeout: 1000
