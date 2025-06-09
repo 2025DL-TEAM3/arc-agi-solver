@@ -5,9 +5,23 @@ Team 03
 
 ## 1. Installation
 
+1. Clone the repository:
+```bash
+git clone https://github.com/2025DL-TEAM3/arc-agi-solver.git
+cd arc-agi-solver
+```
+
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+
+3. Download required files:
+You can download the following files from [Google Drive](https://drive.google.com/drive/folders/1cr1PEyV9NZpNqBl3r32qs4PQ1w2vC_E3?usp=sharing):
+- `augmented_dataset/` - Training and evaluation datasets
+- `artifacts/qwen4b-instruct/` - Model checkpoint
+
+Place the downloaded files in their respective directories in the project root.
 
 ## 2. Configuration
 
