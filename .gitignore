@@ -9,3 +9,5 @@ artifacts/requirements.txt
 
 .env
 .venv/
+
+augmented_dataset/
